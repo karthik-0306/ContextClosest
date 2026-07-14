@@ -1,0 +1,11 @@
+torch
+torchvision
+open_clip_torch
+chromadb
+google-genai
+groq
+datasets
+matplotlib
+pillow
+tqdm
+python-dotenv

@@ -1,0 +1,18 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+ai_env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Project specific
+data/
+chroma_db/
