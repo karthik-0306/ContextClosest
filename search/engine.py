@@ -23,11 +23,28 @@ logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "abo_products"
 
+# Score thresholds: products must pass BOTH before entering RRF.
+# Dense  — cosine similarity between the query text vector and the stored
+#          image vector.  Range: [-1, 1].  0.20 filters out clearly
+#          unrelated products while still allowing cross-modal soft matches.
+# Sparse — dot-product score from SPLADE keyword overlap.  Range: [0, ∞).
+#          5.0 requires at least a meaningful keyword match (e.g. a shared
+#          content word with weight > ~2 each).  Lower values let noisy
+#          partial matches through; higher values become too strict for
+#          short or generic queries.
+DENSE_SCORE_THRESHOLD: float = 0.20
+SPARSE_SCORE_THRESHOLD: float = 15.0
+
 
 class HybridSearchEngine:
     """
     Orchestrates text-query embedding and hybrid (dense + sparse) search
     against a Qdrant collection using Reciprocal Rank Fusion (RRF).
+
+    Score thresholds are applied independently at each prefetch stage so
+    that only products that clear a minimum relevance bar enter the RRF
+    fusion step.  If no products survive either threshold the search returns
+    an empty result set rather than surfacing irrelevant items.
     """
 
     def __init__(self, config: Any) -> None:
@@ -68,17 +85,42 @@ class HybridSearchEngine:
             info.points_count,
         )
 
-    def search(self, query: str, top_k: int = 10) -> dict:
+    def search(
+        self,
+        query: str,
+        top_k: int = 10,
+        dense_threshold: float = DENSE_SCORE_THRESHOLD,
+        sparse_threshold: float = SPARSE_SCORE_THRESHOLD,
+    ) -> dict:
         """
         Runs a hybrid text search against the Qdrant collection.
+
+        Products must satisfy the dense OR sparse threshold to enter RRF
+        fusion.  The final result list may contain fewer than top_k items
+        (including zero) when no products meet either threshold.
+
+        Args:
+            query: Natural language search string.
+            top_k: Maximum number of results to return.
+            dense_threshold: Minimum cosine similarity (0-1) for the dense
+                prefetch.  Products scoring below this are excluded from RRF.
+            sparse_threshold: Minimum dot-product score for the sparse
+                prefetch.  Products scoring below this are excluded from RRF.
+
+        Returns:
+            Dict with keys:
+                results    - list of ranked product dicts (may be empty)
+                elapsed_ms - wall-clock time for the full search
+                count      - number of results returned
+                no_results - True when the result list is empty
         """
         if not query or not query.strip():
-            return {"results": [], "elapsed_ms": 0.0, "count": 0}
+            return {"results": [], "elapsed_ms": 0.0, "count": 0, "no_results": True}
 
         query = query.strip()
         t0 = time.perf_counter()
 
-        # 1. Generate dense text embedding
+        # 1. Generate dense text embedding (SigLIP 2 text encoder)
         logger.debug("Embedding query (dense): '%s'", query)
         dense_vector: list[float] = self._inference.embed_text_dense([query])[0]
 
@@ -90,19 +132,24 @@ class HybridSearchEngine:
             values=sparse_raw["values"],
         )
 
-        # 3. Hybrid search with RRF via Qdrant Prefetch + FusionQuery
+        # 3. Hybrid search with score thresholds on each prefetch leg.
+        #    score_threshold on a Prefetch tells Qdrant to discard any
+        #    candidate whose raw score (cosine / dot-product) falls below
+        #    that value - they never participate in RRF at all.
         results = self._client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
                 Prefetch(
                     query=dense_vector,
                     using="dense_image",
-                    limit=top_k * 3,
+                    limit=top_k * 5,            # cast a wide net before threshold
+                    score_threshold=dense_threshold,
                 ),
                 Prefetch(
                     query=sparse_vector,
                     using="sparse_text",
-                    limit=top_k * 3,
+                    limit=top_k * 5,
+                    score_threshold=sparse_threshold,
                 ),
             ],
             query=FusionQuery(fusion=Fusion.RRF),
@@ -116,7 +163,7 @@ class HybridSearchEngine:
         formatted = []
         for point in results.points:
             payload = point.payload or {}
-            
+
             # Use public S3 URL if on cloud, otherwise fallback to local path
             if "image_url" in payload:
                 image_url = payload["image_url"]
@@ -138,12 +185,25 @@ class HybridSearchEngine:
                 }
             )
 
-        logger.info(
-            "Query '%s' → %d results in %.1f ms", query, len(formatted), elapsed_ms
-        )
+        no_results = len(formatted) == 0
+
+        if no_results:
+            logger.info(
+                "Query '%s' -> no results above thresholds "
+                "(dense>=%.2f, sparse>=%.1f) in %.1f ms",
+                query,
+                dense_threshold,
+                sparse_threshold,
+                elapsed_ms,
+            )
+        else:
+            logger.info(
+                "Query '%s' -> %d results in %.1f ms", query, len(formatted), elapsed_ms
+            )
 
         return {
             "results": formatted,
             "elapsed_ms": round(elapsed_ms, 1),
             "count": len(formatted),
+            "no_results": no_results,
         }
