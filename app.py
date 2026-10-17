@@ -173,6 +173,22 @@ _static_dir = _project_root / "static"
 app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
+@app.middleware("http")
+async def revalidate_frontend(request, call_next):
+    """
+    Makes browsers re-check the page, CSS and JS on every visit.
+
+    On Modal the mounted files report a 1970 modification date, which lets
+    browsers cache them heuristically for years, so a redeploy would not reach
+    returning visitors.  With no-cache the browser revalidates using the ETag
+    and gets a cheap 304 when nothing changed.
+    """
+    response = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
