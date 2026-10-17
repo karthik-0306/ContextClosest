@@ -86,3 +86,12 @@ desktop.ini
 .idea/
 *.suo
 *.user
+
+# ---------------------------------------------------------------------------
+# Personal / course documents kept locally, not published
+# ---------------------------------------------------------------------------
+docs/*.docx
+docs/*.pdf
+docs/coursework_paper.tex
+docs/extracted_doc.txt
+scripts/build_documentation_v2.py

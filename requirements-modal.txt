@@ -17,3 +17,6 @@ Pillow
 # Sparse model (SPLADE) + vector DB
 fastembed
 qdrant-client
+
+# Optional hosted Redis cache (enabled with ENABLE_REDIS in modal_app.py)
+redis

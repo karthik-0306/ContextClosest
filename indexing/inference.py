@@ -7,6 +7,7 @@ for embedding generation. Runs the same PyTorch path locally and in the cloud
 """
 
 import logging
+import os
 from pathlib import Path
 
 # fastembed natively uses ONNX under the hood and is lightweight
@@ -29,6 +30,15 @@ class InferenceEngine:
         from transformers import AutoModel, AutoProcessor
 
         logger.info("Initializing InferenceEngine (PyTorch).")
+        # Cap CPU threads.  Using every logical core oversubscribes hybrid laptop
+        # CPUs (P+E cores) and makes single-query inference ~10x slower (measured
+        # 4.2 s at 12 threads vs 0.5 s at 4 on an i5-1335U); it also lets the API
+        # and the Kafka streaming indexer share one machine.  Override with
+        # TORCH_NUM_THREADS.
+        usable = len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else (os.cpu_count() or 4)
+        num_threads = int(os.getenv("TORCH_NUM_THREADS", min(4, usable)))
+        torch.set_num_threads(num_threads)
+        logger.info("PyTorch using %d CPU threads.", num_threads)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.processor = AutoProcessor.from_pretrained(base_model_name)
         base_model = AutoModel.from_pretrained(base_model_name)

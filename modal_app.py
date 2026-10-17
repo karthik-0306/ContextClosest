@@ -14,9 +14,23 @@ Deploy:
 The command prints a public URL like
     https://<user>--contextclosest-search-web.modal.run
 Open it in a browser, or hit /api/health.
+
+The deployed app searches the same Qdrant Cloud index that the Spark + Kafka
+pipeline writes to, so products streamed in from your machine appear on the
+public site as soon as the consumer indexes them.
+
+Optional Redis cache: create a free hosted Redis (e.g. Upstash), then
+    modal secret create redis REDIS_URL="rediss://default:<password>@<host>:6379"
+and set ENABLE_REDIS = True below.  Without it the app runs uncached.
+Kafka telemetry is turned off on Modal (KAFKA_BOOTSTRAP is empty) because the
+broker runs on your machine.
 """
 
 import modal
+
+# Uses the Modal secret "redis" (REDIS_URL of a hosted Redis, see above).
+# Set to False to run the deployment without a cache.
+ENABLE_REDIS = True
 
 APP_DIR = "/root/app"
 BASE_MODEL = "google/siglip2-base-patch16-224"
@@ -45,7 +59,13 @@ image = (
     # CPU-only torch (avoids pulling ~2 GB of CUDA wheels)
     .pip_install("torch", index_url="https://download.pytorch.org/whl/cpu")
     .pip_install_from_requirements("requirements-modal.txt")
-    .env({**CACHE_ENV, "PYTHONPATH": APP_DIR, "LORA_ADAPTER_DIR": f"{APP_DIR}/deploy/lora_adapter"})
+    .env({
+        **CACHE_ENV,
+        "PYTHONPATH": APP_DIR,
+        "LORA_ADAPTER_DIR": f"{APP_DIR}/deploy/lora_adapter",
+        "TORCH_NUM_THREADS": "2",   # matches cpu=2.0 below
+        "KAFKA_BOOTSTRAP": "",      # no broker on Modal: search telemetry off
+    })
     .run_function(_prefetch_models)
     # Only ship what the server needs — never Raw_Data/ or Processed_Data/.
     .add_local_dir("static", remote_path=f"{APP_DIR}/static")
@@ -58,10 +78,14 @@ image = (
 
 app = modal.App("contextclosest-search")
 
+secrets = [modal.Secret.from_name("qdrant")]  # provides QDRANT_URL, QDRANT_API_KEY
+if ENABLE_REDIS:
+    secrets.append(modal.Secret.from_name("redis"))  # provides REDIS_URL
+
 
 @app.function(
     image=image,
-    secrets=[modal.Secret.from_name("qdrant")],  # provides QDRANT_URL, QDRANT_API_KEY
+    secrets=secrets,
     cpu=2.0,
     memory=4096,
     scaledown_window=300,   # stay warm 5 min after the last request, then scale to zero

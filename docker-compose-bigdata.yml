@@ -1,0 +1,89 @@
+# docker-compose-bigdata.yml
+#
+# One-command local Big Data infrastructure for ContextClosest.
+# Starts Apache Kafka (KRaft mode — no Zookeeper needed) and Redis.
+#
+# Usage:
+#   docker compose -f docker-compose-bigdata.yml up -d    # start in background
+#   docker compose -f docker-compose-bigdata.yml down     # stop and remove
+#   docker compose -f docker-compose-bigdata.yml logs -f  # stream all logs
+#
+# After starting, verify connectivity:
+#   Redis: docker exec contextclosest-redis redis-cli ping   → PONG
+#   Kafka: docker exec contextclosest-kafka kafka-topics.sh \
+#            --bootstrap-server localhost:9092 --list
+#
+# Requirements: Docker Desktop (free) — https://docs.docker.com/desktop/
+
+services:
+
+  # ── Apache Kafka (KRaft mode — single broker, no Zookeeper) ─────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: contextclosest-kafka
+    ports:
+      - "9092:9092"       # external listener for Windows host (Python kafka-python)
+    environment:
+      # KRaft configuration — no Zookeeper required
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qg"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 24
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ── Topic provisioner — runs once to pre-create required topics ───────────────
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: contextclosest-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      bash -c "
+      echo 'Creating Kafka topics...' &&
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic catalog-updates --partitions 3 --replication-factor 1 &&
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic search-telemetry --partitions 3 --replication-factor 1 &&
+      echo 'Kafka topics verified:' &&
+      kafka-topics --bootstrap-server kafka:29092 --list
+      "
+    restart: "no"
+
+  # ── Redis 7 (Alpine — tiny image, ~30 MB) ────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: contextclosest-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  kafka_data:
+    driver: local
+  redis_data:
+    driver: local

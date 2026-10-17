@@ -89,10 +89,25 @@
     </section>
 
     <!-- ----------------------------------------------------------------
+         Trending Searches (Redis-powered real-time leaderboard)
+         ---------------------------------------------------------------- -->
+    <section id="trending-section" class="trending-section" aria-label="Trending searches" style="display:none;">
+      <div class="trending-header">
+        <span class="trending-fire">🔥</span>
+        <span class="trending-label">Trending Searches</span>
+        <span class="trending-badge">Live</span>
+      </div>
+      <div id="trending-pills" class="trending-pills" role="list">
+        <!-- Populated by app.js via /api/trending -->
+      </div>
+    </section>
+
+    <!-- ----------------------------------------------------------------
          Status Bar
          ---------------------------------------------------------------- -->
     <div id="status-bar" class="status-bar" aria-live="polite" aria-atomic="true">
       <span id="status-text" class="status-text"></span>
+      <span id="cache-badge" class="cache-badge" style="display:none;">⚡ Cached</span>
       <span id="latency-badge" class="latency-badge"></span>
     </div>
 
@@ -116,7 +131,12 @@
         <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a>
         on the
         <a href="https://amazon-berkeley-objects.s3.amazonaws.com/index.html" target="_blank" rel="noopener">Amazon Berkeley Objects</a>
-        dataset
+        dataset &middot; Powered by
+        <a href="https://kafka.apache.org" target="_blank" rel="noopener">Apache Kafka</a>
+        ·
+        <a href="https://spark.apache.org" target="_blank" rel="noopener">Apache Spark</a>
+        ·
+        <a href="https://redis.io" target="_blank" rel="noopener">Redis</a>
       </p>
     </footer>
 

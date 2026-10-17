@@ -3,6 +3,15 @@ search/engine.py
 
 Provides the HybridSearchEngine class that orchestrates text query embedding
 and hybrid vector search against the Qdrant database (Local or Cloud).
+
+Big Data Integration — Redis:
+  Queries are answered from a two-tier Redis cache before any expensive
+  PyTorch inference or Qdrant RPC is attempted:
+    1. Result Cache  — full serialised JSON result, 1-hour TTL.
+    2. Embedding Cache — 768-dim dense + SPLADE sparse vectors, 24-hour TTL.
+  Searches that return products are counted in a sliding one-hour window
+  of Redis Sorted Sets for real-time trending queries (/api/trending).
+  If Redis is unavailable the engine falls back transparently.
 """
 
 import os
@@ -19,6 +28,8 @@ from qdrant_client.models import (
     SparseVector,
 )
 
+from search.cache import RedisCache
+
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "abo_products"
@@ -32,6 +43,9 @@ COLLECTION_NAME = "abo_products"
 #          content word with weight > ~2 each).  Lower values let noisy
 #          partial matches through; higher values become too strict for
 #          short or generic queries.
+# Products added by the Kafka streaming indexer show a "NEW" badge for a week.
+NEW_BADGE_SECONDS: int = 7 * 24 * 3600
+
 DENSE_SCORE_THRESHOLD: float = 0.20
 SPARSE_SCORE_THRESHOLD: float = 15.0
 
@@ -49,8 +63,8 @@ class HybridSearchEngine:
 
     def __init__(self, config: Any) -> None:
         """
-        Initializes the search engine by loading the inference models and
-        connecting to the Qdrant database.
+        Initializes the search engine by loading the inference models,
+        connecting to the Qdrant database, and initialising the Redis cache.
         """
         from indexing.inference import InferenceEngine
 
@@ -84,6 +98,9 @@ class HybridSearchEngine:
             COLLECTION_NAME,
             info.points_count,
         )
+
+        # ── Redis Cache (graceful fallback if unavailable) ─────────────────────
+        self._cache = RedisCache.from_env()
 
     def search(
         self,
@@ -120,13 +137,39 @@ class HybridSearchEngine:
         query = query.strip()
         t0 = time.perf_counter()
 
-        # 1. Generate dense text embedding (SigLIP 2 text encoder)
-        logger.debug("Embedding query (dense): '%s'", query)
-        dense_vector: list[float] = self._inference.embed_text_dense([query])[0]
+        # ── Redis Tier-1: Full Result Cache ────────────────────────────────────
+        variant = f"k={top_k}|d={dense_threshold}|s={sparse_threshold}"
+        cached = self._cache.get_result(query, variant)
+        if cached is not None:
+            # Report the latency of THIS request, not the original miss.
+            elapsed_ms = (time.perf_counter() - t0) * 1000
+            cached["cache_hit"] = True
+            cached["elapsed_ms"] = round(elapsed_ms, 2)
+            if cached.get("count"):
+                self._cache.record_query(query)   # trending: only queries with results
+            logger.info(
+                "Cache HIT (result) for query '%s' — served in %.2f ms.", query, elapsed_ms
+            )
+            return cached
 
-        # 2. Generate sparse SPLADE embedding
-        logger.debug("Embedding query (sparse): '%s'", query)
-        sparse_raw: dict = self._inference.embed_text_sparse([query])[0]
+        # ── Redis Tier-2: Embedding Cache ──────────────────────────────────────
+        cached_embeds = self._cache.get_embeddings(query)
+        if cached_embeds:
+            logger.debug("Embedding cache HIT for query: '%s'", query)
+            dense_vector: list[float] = cached_embeds["dense"]
+            sparse_raw: dict = cached_embeds["sparse"]
+        else:
+            # 1. Generate dense text embedding (SigLIP 2 text encoder)
+            logger.debug("Embedding query (dense): '%s'", query)
+            dense_vector = self._inference.embed_text_dense([query])[0]
+
+            # 2. Generate sparse SPLADE embedding
+            logger.debug("Embedding query (sparse): '%s'", query)
+            sparse_raw = self._inference.embed_text_sparse([query])[0]
+
+            # Store embeddings for future repeated queries.
+            self._cache.set_embeddings(query, dense_vector, sparse_raw)
+
         sparse_vector = SparseVector(
             indices=sparse_raw["indices"],
             values=sparse_raw["values"],
@@ -182,6 +225,10 @@ class HybridSearchEngine:
                     "product_type": payload.get("product_type") or "",
                     "category": payload.get("category") or "",
                     "image_url": image_url,
+                    # Set by the Kafka streaming indexer for live-ingested products.
+                    "is_new": payload.get("source") == "kafka-stream"
+                    and time.time() - float(payload.get("ingested_at") or 0) < NEW_BADGE_SECONDS,
+                    "ingested_at": payload.get("ingested_at"),
                 }
             )
 
@@ -201,9 +248,25 @@ class HybridSearchEngine:
                 "Query '%s' -> %d results in %.1f ms", query, len(formatted), elapsed_ms
             )
 
-        return {
+        result = {
             "results": formatted,
             "elapsed_ms": round(elapsed_ms, 1),
             "count": len(formatted),
             "no_results": no_results,
+            "cache_hit": False,
         }
+
+        # Store the fresh result in the Redis result cache for future requests.
+        self._cache.set_result(query, result, variant)
+        if not no_results:
+            self._cache.record_query(query)   # trending: only queries with results
+
+        return result
+
+    def cache_stats(self) -> dict:
+        """Returns Redis cache health and memory statistics."""
+        return self._cache.get_stats()
+
+    def get_trending(self, n: int = 10) -> list[dict]:
+        """Returns the top-n trending queries from the Redis sorted set."""
+        return self._cache.get_trending(n)

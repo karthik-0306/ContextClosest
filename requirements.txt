@@ -1,21 +1,27 @@
-# Phase 1: Data Cleaning & ETL
+# Core search engine: data prep, training, indexing, API.
+# Big data pipeline extras (Spark, Kafka, Redis): requirements-bigdata.txt
+# Modal deployment image: requirements-modal.txt
+
+# Data preparation
 pandas>=2.0.0
 pyarrow>=12.0.0
-fastembed
-qdrant-client
 tqdm
+
+# Models: fine-tuned SigLIP 2 (dense) + SPLADE (sparse)
+torch
+torchvision
 transformers
 peft
 accelerate
-torch
-torchvision
+fastembed
+Pillow
 
-# Phase 4: Web Application & Cloud Deployment
+# Vector database
+qdrant-client
+
+# API and cloud
 fastapi
 uvicorn[standard]
 python-multipart
-Pillow
-boto3
 python-dotenv
-onnxruntime
-optimum[onnxruntime]
+boto3

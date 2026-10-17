@@ -2,7 +2,9 @@
  * app.js — Client-side logic for the Hybrid Multimodal Search Engine
  *
  * Features:
- *  - Debounced search-as-you-type (350ms delay)
+ *  - High-performance hybrid search (dense SigLIP 2 + sparse SPLADE)
+ *  - Redis Two-Tier Cache: instant response (<2ms) with ⚡ Cached badge
+ *  - Real-Time Trending Leaderboard: live queries from Redis Sorted Sets
  *  - Skeleton loading cards while fetching
  *  - Dynamic product card rendering from API JSON
  *  - Relevance score progress bars
@@ -12,12 +14,15 @@
 // ---------------------------------------------------------------------------
 // DOM references
 // ---------------------------------------------------------------------------
-const searchInput  = document.getElementById('search-input');
-const searchBtn    = document.getElementById('search-btn');
-const resultsGrid  = document.getElementById('results-grid');
-const statusBar    = document.getElementById('status-bar');
-const statusText   = document.getElementById('status-text');
-const latencyBadge = document.getElementById('latency-badge');
+const searchInput     = document.getElementById('search-input');
+const searchBtn       = document.getElementById('search-btn');
+const resultsGrid     = document.getElementById('results-grid');
+const statusBar       = document.getElementById('status-bar');
+const statusText      = document.getElementById('status-text');
+const latencyBadge    = document.getElementById('latency-badge');
+const cacheBadge      = document.getElementById('cache-badge');
+const trendingSection = document.getElementById('trending-section');
+const trendingPills   = document.getElementById('trending-pills');
 
 // ---------------------------------------------------------------------------
 // State
@@ -26,8 +31,7 @@ let currentQuery = '';
 
 // ---------------------------------------------------------------------------
 // Search entry points
-// Search only fires on button click or Enter key.
-// No search-as-you-type — inference on CPU is too slow for that.
+// Search only fires on button click, Enter key, or trending pill click.
 // ---------------------------------------------------------------------------
 
 /** Fires when the user clicks the search button */
@@ -58,7 +62,7 @@ async function triggerSearch() {
 
   try {
     const url = `/api/search?q=${encodeURIComponent(q)}&top_k=12`;
-    const res  = await fetch(url);
+    const res = await fetch(url);
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
@@ -68,6 +72,9 @@ async function triggerSearch() {
     const data = await res.json();
     renderResults(data, q);
 
+    // Refresh trending queries leaderboard in the background
+    loadTrending();
+
   } catch (err) {
     showError(err.message);
   } finally {
@@ -76,14 +83,63 @@ async function triggerSearch() {
 }
 
 // ---------------------------------------------------------------------------
+// Trending Searches (Redis Sorted Set)
+// ---------------------------------------------------------------------------
+
+async function loadTrending() {
+  if (!trendingSection || !trendingPills) return;
+
+  try {
+    const res = await fetch('/api/trending?n=5');
+    if (!res.ok) {
+      trendingSection.style.display = 'none';
+      return;
+    }
+
+    const data = await res.json();
+    const items = data.trending || [];
+
+    if (items.length === 0) {
+      trendingSection.style.display = 'none';
+      return;
+    }
+
+    trendingPills.innerHTML = items.map(item => `
+      <button class="trending-pill" type="button" data-query="${escHtml(item.query)}">
+        <span class="pill-query">${escHtml(item.query)}</span>
+        <span class="pill-count">${item.count}</span>
+      </button>
+    `).join('');
+
+    trendingSection.style.display = 'flex';
+
+    // Clicking a trending pill runs the search immediately
+    trendingPills.querySelectorAll('.trending-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const query = btn.getAttribute('data-query');
+        if (query) {
+          searchInput.value = query;
+          currentQuery = ''; // Reset so triggerSearch executes
+          triggerSearch();
+        }
+      });
+    });
+
+  } catch {
+    // If Redis is offline, cleanly hide the trending section
+    trendingSection.style.display = 'none';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Render helpers
 // ---------------------------------------------------------------------------
 
 function renderResults(data, query) {
-  const { results, count, elapsed_ms } = data;
+  const { results, count, elapsed_ms, cache_hit } = data;
 
-  // Update status bar
-  updateStatus(count, query, elapsed_ms);
+  // Update status bar with latency and cache hit status
+  updateStatus(count, query, elapsed_ms, cache_hit);
 
   resultsGrid.innerHTML = '';
 
@@ -130,6 +186,7 @@ function buildCard(product, index) {
     <div class="card-image-wrap">
       ${imgHtml}
       <div class="score-badge">#${index + 1}</div>
+      ${product.is_new ? `<div class="new-badge" title="Added ${new Date(product.ingested_at * 1000).toLocaleString()}">NEW</div>` : ''}
     </div>
     <div class="card-body">
       <div class="card-meta">
@@ -155,12 +212,18 @@ function buildCard(product, index) {
 // Status bar
 // ---------------------------------------------------------------------------
 
-function updateStatus(count, query, elapsed_ms) {
+function updateStatus(count, query, elapsed_ms, cache_hit = false) {
   if (count === 0) {
     statusText.innerHTML = `No results for <strong>"${escHtml(query)}"</strong>`;
   } else {
     statusText.innerHTML = `<strong>${count}</strong> result${count !== 1 ? 's' : ''} for <strong>"${escHtml(query)}"</strong>`;
   }
+
+  // Redis Cache indicator
+  if (cacheBadge) {
+    cacheBadge.style.display = cache_hit ? 'inline-flex' : 'none';
+  }
+
   latencyBadge.textContent = `${elapsed_ms} ms`;
   statusBar.classList.add('visible');
 }
@@ -171,6 +234,7 @@ function updateStatus(count, query, elapsed_ms) {
 
 function showSkeleton(count) {
   statusBar.classList.remove('visible');
+  if (cacheBadge) cacheBadge.style.display = 'none';
   resultsGrid.innerHTML = Array.from({ length: count }, () => `
     <div class="skeleton-card">
       <div class="skeleton-img"></div>
@@ -187,6 +251,7 @@ function showSkeleton(count) {
 function showIntroState() {
   currentQuery = '';
   statusBar.classList.remove('visible');
+  if (cacheBadge) cacheBadge.style.display = 'none';
   resultsGrid.innerHTML = `
     <div class="state-container state-intro">
       <div class="state-icon">🔍</div>
@@ -200,6 +265,7 @@ function showIntroState() {
 }
 
 function showEmptyState(query) {
+  if (cacheBadge) cacheBadge.style.display = 'none';
   resultsGrid.innerHTML = `
     <div class="state-container state-empty">
       <div class="state-icon">🕵️</div>
@@ -214,6 +280,7 @@ function showEmptyState(query) {
 
 function showError(message) {
   statusBar.classList.remove('visible');
+  if (cacheBadge) cacheBadge.style.display = 'none';
   resultsGrid.innerHTML = `
     <div class="state-container state-error">
       <div class="state-icon">⚠️</div>
@@ -247,4 +314,5 @@ function escHtml(str) {
 // Init
 // ---------------------------------------------------------------------------
 showIntroState();
+loadTrending();
 searchInput.focus();

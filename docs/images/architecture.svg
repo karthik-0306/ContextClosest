@@ -1,0 +1,213 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1084" width="1280" height="1084" font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif" role="img" aria-label="ContextClosest system architecture">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8A93A0"/></marker></defs>
+<rect x="0.5" y="0.5" width="1279" height="1083" rx="16" fill="#FFFFFF" stroke="#D5DAE1"/>
+<text x="32" y="42" font-size="24" font-weight="700" fill="#1C2430" text-anchor="start">ContextClosest — how the system works</text>
+<text x="32" y="68" font-size="14" font-weight="400" fill="#56606E" text-anchor="start">From raw Amazon listings to a live hybrid search engine: batch ETL, fine-tuning, streaming ingestion, cached serving and live analytics</text>
+<rect x="16" y="88" width="992" height="220" rx="14" fill="#F4F6F9"/>
+<text x="32" y="114" font-size="12.5" font-weight="700" fill="#56606E" text-anchor="start">1 · OFFLINE — DATA, MODEL, INDEX (RUN ONCE)</text>
+<rect x="32" y="132" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="32" y="142" width="4" height="140" rx="2" fill="#7A8AA0"/>
+<rect x="46" y="144" width="100" height="22" rx="11" fill="#E8ECF2"/>
+<text x="96.0" y="159.5" font-size="12" font-weight="600" fill="#3B4A5E" text-anchor="middle">ABO dataset</text>
+<text x="46" y="190" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Raw catalog</text>
+<text x="46" y="214" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">147,702 listings, 16 files</text>
+<text x="46" y="233" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">nested multilingual JSON</text>
+<text x="46" y="252" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">398,212 product images</text>
+<text x="46" y="271" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">Amazon Berkeley Objects</text>
+<rect x="282" y="132" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="282" y="142" width="4" height="140" rx="2" fill="#E2702F"/>
+<rect x="296" y="144" width="107" height="22" rx="11" fill="#FDE6D8"/>
+<text x="349.5" y="159.5" font-size="12" font-weight="600" fill="#A9420E" text-anchor="middle">Apache Spark</text>
+<text x="296" y="190" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Batch ETL</text>
+<text x="296" y="214" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">flatten multilingual fields</text>
+<text x="296" y="233" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">filter invalid listings</text>
+<text x="296" y="252" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">window dedup by marketplace</text>
+<text x="296" y="271" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">→ 56,427 products (Parquet)</text>
+<rect x="532" y="132" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="532" y="142" width="4" height="140" rx="2" fill="#4A7FD6"/>
+<rect x="546" y="144" width="93" height="22" rx="11" fill="#DCE7FB"/>
+<text x="592.5" y="159.5" font-size="12" font-weight="600" fill="#1D4F9E" text-anchor="middle">Kaggle GPU</text>
+<text x="546" y="190" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Fine-tuning</text>
+<text x="546" y="214" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">SigLIP 2 base + LoRA</text>
+<text x="546" y="233" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">rank 16 · alpha 32</text>
+<text x="546" y="252" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">sigmoid contrastive loss</text>
+<text x="546" y="271" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">image ↔ attribute captions</text>
+<rect x="782" y="132" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="782" y="142" width="4" height="140" rx="2" fill="#4A7FD6"/>
+<rect x="796" y="144" width="142" height="22" rx="11" fill="#DCE7FB"/>
+<text x="867.0" y="159.5" font-size="12" font-weight="600" fill="#1D4F9E" text-anchor="middle">SigLIP 2 · SPLADE</text>
+<text x="796" y="190" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Embed &amp; index</text>
+<text x="796" y="214" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">768-d image vectors</text>
+<text x="796" y="233" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">SPLADE sparse text vectors</text>
+<text x="796" y="252" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">images → AWS S3</text>
+<text x="796" y="271" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">cloud_reindex.py</text>
+<path d="M242 212 H280" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M492 212 H530" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M742 212 H780" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="16" y="324" width="992" height="220" rx="14" fill="#F4F6F9"/>
+<text x="32" y="350" font-size="12.5" font-weight="700" fill="#56606E" text-anchor="start">2 · STREAMING INGESTION — NEW PRODUCTS, NO RE-INDEX</text>
+<rect x="32" y="368" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="32" y="378" width="4" height="140" rx="2" fill="#E2702F"/>
+<rect x="46" y="380" width="107" height="22" rx="11" fill="#FDE6D8"/>
+<text x="99.5" y="395.5" font-size="12" font-weight="600" fill="#A9420E" text-anchor="middle">Apache Spark</text>
+<text x="46" y="426" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Incremental ETL</text>
+<text x="46" y="450" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">new raw product feed</text>
+<text x="46" y="469" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">same cleaning rules</text>
+<text x="46" y="488" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">anti-join vs indexed IDs</text>
+<text x="46" y="507" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">→ only new products</text>
+<rect x="282" y="368" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="282" y="378" width="4" height="140" rx="2" fill="#5A5E68"/>
+<rect x="296" y="380" width="107" height="22" rx="11" fill="#E4E5EA"/>
+<text x="349.5" y="395.5" font-size="12" font-weight="600" fill="#23252B" text-anchor="middle">Apache Kafka</text>
+<text x="296" y="426" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Producer</text>
+<text x="296" y="450" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">1 message per product</text>
+<text x="296" y="469" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">keyed by item_id</text>
+<text x="296" y="488" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">uploads image to S3</text>
+<text x="296" y="507" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">kafka_producer.py</text>
+<rect x="532" y="368" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="532" y="378" width="4" height="140" rx="2" fill="#5A5E68"/>
+<rect x="546" y="380" width="107" height="22" rx="11" fill="#E4E5EA"/>
+<text x="599.5" y="395.5" font-size="12" font-weight="600" fill="#23252B" text-anchor="middle">Apache Kafka</text>
+<text x="546" y="426" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">catalog-updates</text>
+<text x="546" y="450" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">topic · 3 partitions</text>
+<text x="546" y="469" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">durable and replayable</text>
+<text x="546" y="488" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">per-product ordering</text>
+<text x="546" y="507" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">KRaft broker (Docker)</text>
+<rect x="782" y="368" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="782" y="378" width="4" height="140" rx="2" fill="#5A5E68"/>
+<rect x="796" y="380" width="121" height="22" rx="11" fill="#E4E5EA"/>
+<text x="856.5" y="395.5" font-size="12" font-weight="600" fill="#23252B" text-anchor="middle">Kafka consumer</text>
+<text x="796" y="426" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Streaming indexer</text>
+<text x="796" y="450" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">micro-batch: 8 msgs / 3 s</text>
+<text x="796" y="469" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">embed image + SPLADE</text>
+<text x="796" y="488" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">upsert · commit offsets</text>
+<text x="796" y="507" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">clear stale Redis results</text>
+<path d="M242 448 H280" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M492 448 H530" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M742 448 H780" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="16" y="560" width="992" height="250" rx="14" fill="#F4F6F9"/>
+<text x="32" y="586" font-size="12.5" font-weight="700" fill="#56606E" text-anchor="start">3 · SERVING — A SEARCH REQUEST</text>
+<rect x="32" y="604" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="32" y="614" width="4" height="140" rx="2" fill="#2FA585"/>
+<rect x="46" y="616" width="128" height="22" rx="11" fill="#D8F1EA"/>
+<text x="110.0" y="631.5" font-size="12" font-weight="600" fill="#0D6A55" text-anchor="middle">FastAPI · Modal</text>
+<text x="46" y="662" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Search API</text>
+<text x="46" y="686" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">query from the browser</text>
+<text x="46" y="705" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">serverless on Modal</text>
+<text x="46" y="724" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">scales to zero when idle</text>
+<text x="46" y="743" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">logs every search</text>
+<rect x="282" y="604" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="282" y="614" width="4" height="140" rx="2" fill="#DC4B3E"/>
+<rect x="296" y="616" width="57" height="22" rx="11" fill="#FBE0DD"/>
+<text x="324.5" y="631.5" font-size="12" font-weight="600" fill="#B3261B" text-anchor="middle">Redis</text>
+<text x="296" y="662" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Cache &amp; trending</text>
+<text x="296" y="686" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">result cache · 1 h TTL</text>
+<text x="296" y="705" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">embedding cache · 24 h</text>
+<text x="296" y="724" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">trending · last hour</text>
+<text x="296" y="743" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">hit → answer in ms</text>
+<rect x="532" y="604" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="532" y="614" width="4" height="140" rx="2" fill="#4A7FD6"/>
+<rect x="546" y="616" width="142" height="22" rx="11" fill="#DCE7FB"/>
+<text x="617.0" y="631.5" font-size="12" font-weight="600" fill="#1D4F9E" text-anchor="middle">SigLIP 2 · SPLADE</text>
+<text x="546" y="662" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Query encoders</text>
+<text x="546" y="686" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">run on a cache miss</text>
+<text x="546" y="705" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">text tower → 768-d vector</text>
+<text x="546" y="724" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">SPLADE → sparse vector</text>
+<text x="546" y="743" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">same models as the index</text>
+<rect x="782" y="604" width="210" height="160" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="782" y="614" width="4" height="140" rx="2" fill="#8A63D6"/>
+<rect x="796" y="616" width="64" height="22" rx="11" fill="#ECE3FB"/>
+<text x="828.0" y="631.5" font-size="12" font-weight="600" fill="#5A2DB0" text-anchor="middle">Qdrant</text>
+<text x="796" y="662" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Hybrid search</text>
+<text x="796" y="686" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">dense ≥ 0.20 · sparse ≥ 15</text>
+<text x="796" y="705" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">Reciprocal Rank Fusion</text>
+<text x="796" y="724" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">top-k products</text>
+<text x="796" y="743" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">payload + S3 image URL</text>
+<path d="M244 684 H280" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<path d="M492 684 H530" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="512.0" y="676" font-size="12" font-weight="600" fill="#56606E" text-anchor="middle">miss</text>
+<path d="M742 684 H780" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M887.0 764 V790 H182 V766" fill="none" stroke="#8A93A0" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="534.5" y="783" font-size="12" font-weight="600" fill="#56606E" text-anchor="middle">ranked results + image URLs → browser</text>
+<path d="M887.0 528 V552.0 H387.0 V602" fill="none" stroke="#8A93A0" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="397.0" y="586" font-size="12" font-weight="600" fill="#56606E" text-anchor="start">clears stale cached results</text>
+<rect x="16" y="826" width="992" height="200" rx="14" fill="#F4F6F9"/>
+<text x="992" y="852" font-size="12.5" font-weight="700" fill="#56606E" text-anchor="end">4 · LIVE ANALYTICS</text>
+<rect x="32" y="870" width="210" height="140" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="32" y="880" width="4" height="120" rx="2" fill="#5A5E68"/>
+<rect x="46" y="882" width="107" height="22" rx="11" fill="#E4E5EA"/>
+<text x="99.5" y="897.5" font-size="12" font-weight="600" fill="#23252B" text-anchor="middle">Apache Kafka</text>
+<text x="46" y="928" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">search-telemetry</text>
+<text x="46" y="952" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">1 event per search</text>
+<text x="46" y="971" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">query, results, latency</text>
+<text x="46" y="990" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">cache hit or miss</text>
+<rect x="282" y="870" width="210" height="140" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="282" y="880" width="4" height="120" rx="2" fill="#E2702F"/>
+<rect x="296" y="882" width="128" height="22" rx="11" fill="#FDE6D8"/>
+<text x="360.0" y="897.5" font-size="12" font-weight="600" fill="#A9420E" text-anchor="middle">Spark Streaming</text>
+<text x="296" y="928" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Live analytics</text>
+<text x="296" y="952" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">1-min event-time windows</text>
+<text x="296" y="971" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">2-min watermark</text>
+<text x="296" y="990" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">top queries</text>
+<rect x="532" y="870" width="210" height="140" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="532" y="880" width="4" height="120" rx="2" fill="#7A8AA0"/>
+<rect x="546" y="882" width="71" height="22" rx="11" fill="#E8ECF2"/>
+<text x="581.5" y="897.5" font-size="12" font-weight="600" fill="#3B4A5E" text-anchor="middle">Parquet</text>
+<text x="546" y="928" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Search KPIs</text>
+<text x="546" y="952" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">searches · unique queries</text>
+<text x="546" y="971" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">zero-result rate</text>
+<text x="546" y="990" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">cache-hit rate · p95 latency</text>
+<path d="M242 940 H280" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M492 940 H530" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M92 764 V868" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="100" y="798" font-size="12" font-weight="600" fill="#56606E" text-anchor="start">every search</text>
+<rect x="1048" y="88" width="216" height="722" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="1048" y="98" width="4" height="702" rx="2" fill="#8A63D6"/>
+<rect x="1062" y="100" width="107" height="22" rx="11" fill="#ECE3FB"/>
+<text x="1115.5" y="115.5" font-size="12" font-weight="600" fill="#5A2DB0" text-anchor="middle">Qdrant Cloud</text>
+<text x="1062" y="146" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Vector index</text>
+<text x="1062" y="170" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">collection abo_products</text>
+<text x="1062" y="189" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">dense_image · 768-d</text>
+<text x="1062" y="208" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">sparse_text · SPLADE</text>
+<text x="1062" y="227" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">payload: title, brand,</text>
+<text x="1062" y="246" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">color, material, image_url</text>
+<text x="1062" y="265" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">56,427 products</text>
+<text x="1062" y="284" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start"></text>
+<text x="1062" y="303" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">shared by local runs</text>
+<text x="1062" y="322" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">and the Modal site</text>
+<rect x="1048" y="826" width="216" height="200" rx="10" fill="#FFFFFF" stroke="#D5DAE1" stroke-width="1.2"/>
+<rect x="1048" y="836" width="4" height="180" rx="2" fill="#D79A2B"/>
+<rect x="1062" y="838" width="64" height="22" rx="11" fill="#FFEFD2"/>
+<text x="1094.0" y="853.5" font-size="12" font-weight="600" fill="#8F5600" text-anchor="middle">AWS S3</text>
+<text x="1062" y="884" font-size="17" font-weight="700" fill="#1C2430" text-anchor="start">Product images</text>
+<text x="1062" y="908" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">public bucket</text>
+<text x="1062" y="927" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">images/&lt;id&gt;.jpg</text>
+<text x="1062" y="946" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">loaded by the browser</text>
+<text x="1062" y="965" font-size="13.5" font-weight="400" fill="#56606E" text-anchor="start">via payload image_url</text>
+<path d="M992 212 H1046" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="1020.0" y="204" font-size="12" font-weight="600" fill="#56606E" text-anchor="middle">vectors</text>
+<path d="M992 448 H1046" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="1020.0" y="440" font-size="12" font-weight="600" fill="#56606E" text-anchor="middle">upsert</text>
+<path d="M994 684 H1046" fill="none" stroke="#8A93A0" stroke-width="1.6" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<text x="1020.0" y="676" font-size="12" font-weight="600" fill="#56606E" text-anchor="middle">query</text>
+<path d="M1156.0 810 V824" fill="none" stroke="#8A93A0" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="32" y="1062" font-size="12.5" font-weight="700" fill="#56606E" text-anchor="start">Legend</text>
+<rect x="92" y="1047" width="50" height="22" rx="11" fill="#E8ECF2"/>
+<text x="117.0" y="1062.5" font-size="12" font-weight="600" fill="#3B4A5E" text-anchor="middle">Data</text>
+<rect x="152" y="1047" width="107" height="22" rx="11" fill="#FDE6D8"/>
+<text x="205.5" y="1062.5" font-size="12" font-weight="600" fill="#A9420E" text-anchor="middle">Apache Spark</text>
+<rect x="269" y="1047" width="107" height="22" rx="11" fill="#E4E5EA"/>
+<text x="322.5" y="1062.5" font-size="12" font-weight="600" fill="#23252B" text-anchor="middle">Apache Kafka</text>
+<rect x="386" y="1047" width="85" height="22" rx="11" fill="#DCE7FB"/>
+<text x="428.5" y="1062.5" font-size="12" font-weight="600" fill="#1D4F9E" text-anchor="middle">ML models</text>
+<rect x="481" y="1047" width="57" height="22" rx="11" fill="#FBE0DD"/>
+<text x="509.5" y="1062.5" font-size="12" font-weight="600" fill="#B3261B" text-anchor="middle">Redis</text>
+<rect x="548" y="1047" width="64" height="22" rx="11" fill="#ECE3FB"/>
+<text x="580.0" y="1062.5" font-size="12" font-weight="600" fill="#5A2DB0" text-anchor="middle">Qdrant</text>
+<rect x="622" y="1047" width="64" height="22" rx="11" fill="#FFEFD2"/>
+<text x="654.0" y="1062.5" font-size="12" font-weight="600" fill="#8F5600" text-anchor="middle">AWS S3</text>
+<rect x="696" y="1047" width="128" height="22" rx="11" fill="#D8F1EA"/>
+<text x="760.0" y="1062.5" font-size="12" font-weight="600" fill="#0D6A55" text-anchor="middle">FastAPI / Modal</text>
+<path d="M848 1058 h34" stroke="#8A93A0" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="890" y="1062" font-size="12.5" font-weight="400" fill="#56606E" text-anchor="start">side effect / reference</text>
+</svg>

@@ -1,0 +1,17 @@
+# requirements-bigdata.txt
+#
+# Big data pipeline dependencies (install on top of requirements.txt):
+#   pip install -r requirements.txt -r requirements-bigdata.txt
+#
+# The search API runs without them: Redis and Kafka features switch off
+# gracefully when the packages or services are missing.
+
+# Apache Spark, local mode. Needs Java 17. Spark 4.x (Scala 2.13) matches the
+# spark-sql-kafka connector that spark_telemetry_stream.py downloads.
+pyspark>=4.0
+
+# Apache Kafka client (producer, streaming indexer, API telemetry)
+kafka-python>=2.2
+
+# Redis client (caches, trending searches)
+redis>=5.0.0
