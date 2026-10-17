@@ -3,144 +3,199 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hybrid Multimodal Search Engine</title>
-  <meta name="description" content="Search 56,000+ Amazon products using AI-powered hybrid semantic search — fine-tuned SigLIP 2 dense embeddings combined with SPLADE keyword matching." />
+  <title>ContextClosest — search a catalog by meaning</title>
+  <meta name="description" content="Hybrid multimodal product search over 56,427 Amazon products: a fine-tuned SigLIP 2 model that reads product photos, SPLADE keyword vectors and Reciprocal Rank Fusion in Qdrant." />
 
-  <!-- Design system -->
+  <!-- Apply the saved theme before first paint (no flash) -->
+  <script>
+    try {
+      const saved = localStorage.getItem('cc-theme');
+      if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+    } catch (e) { /* storage unavailable: follow the system theme */ }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="/static/styles.css" />
 
-  <!-- Favicon emoji -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232340D9'/><g stroke='%23ffffff' stroke-width='1.6' opacity='.75'><line x1='16' y1='16' x2='7' y2='9'/><line x1='16' y1='16' x2='25' y2='11'/><line x1='16' y1='16' x2='22' y2='25'/></g><circle cx='7' cy='9' r='2.6' fill='%23fff'/><circle cx='25' cy='11' r='2.6' fill='%23fff'/><circle cx='22' cy='25' r='2.6' fill='%23fff'/><circle cx='16' cy='16' r='4' fill='%23F0A81E'/></svg>" />
 </head>
 
 <body>
-  <div class="app-wrapper">
+  <a class="skip-link" href="#search-input">Skip to search</a>
 
-    <!-- ----------------------------------------------------------------
-         Hero / Header
-         ---------------------------------------------------------------- -->
-    <header class="hero" role="banner">
-      <div class="hero-eyebrow">
-        <span class="dot"></span>
-        Multimodal Search Engine — SigLIP 2 + SPLADE + Qdrant
+  <!-- ───────────────────────────── Top bar ───────────────────────────── -->
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="ContextClosest home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" class="brand-mark-bg" />
+        <g class="brand-mark-lines">
+          <line x1="16" y1="16" x2="7" y2="9" />
+          <line x1="16" y1="16" x2="25" y2="11" />
+          <line x1="16" y1="16" x2="22" y2="25" />
+        </g>
+        <circle cx="7" cy="9" r="2.6" class="brand-mark-dot" />
+        <circle cx="25" cy="11" r="2.6" class="brand-mark-dot" />
+        <circle cx="22" cy="25" r="2.6" class="brand-mark-dot" />
+        <circle cx="16" cy="16" r="4" class="brand-mark-query" />
+      </svg>
+      <span class="brand-name">Context<span>Closest</span></span>
+    </a>
+
+    <nav class="topnav" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="/docs" target="_blank" rel="noopener">API</a>
+      <a href="https://github.com/karthik-0306/ContextClosest" target="_blank" rel="noopener" class="topnav-gh">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.88.87 2.34.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"/></svg>
+        GitHub
+      </a>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch colour theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></svg>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ───────────────────────────── Hero ───────────────────────────── -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Hybrid multimodal retrieval · live</p>
+
+        <h1 id="hero-title" class="hero-title">Search a catalog by what you <em>mean</em>.</h1>
+
+        <p class="lede">
+          56,427 Amazon products, ranked by a fine-tuned SigLIP&nbsp;2 model that reads product
+          photos and by SPLADE keyword vectors, fused with Reciprocal Rank Fusion.
+        </p>
+
+        <form id="search-form" class="search" role="search" autocomplete="off">
+          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <label class="sr-only" for="search-input">Search products</label>
+          <input
+            id="search-input"
+            type="search"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="Describe a product — “white sneakers for girls”"
+          />
+          <kbd class="kbd" aria-hidden="true">/</kbd>
+          <button id="search-btn" class="search-btn" type="submit">
+            <span class="btn-text">Search</span>
+            <svg class="btn-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+
+        <div class="examples" aria-label="Example searches">
+          <span class="row-label">Try</span>
+          <button class="chip example" type="button">sunglasses for men</button>
+          <button class="chip example" type="button">white sneakers for girls</button>
+          <button class="chip example" type="button">wooden coffee table</button>
+        </div>
+
+        <div id="trending" class="trending" hidden>
+          <span class="row-label"><span class="live-dot" aria-hidden="true"></span>Trending · last hour</span>
+          <div id="trending-pills" class="trending-pills" role="list"></div>
+        </div>
       </div>
 
-      <h1 class="hero-title">
-        Search Products by<br />
-        <span class="gradient-text">Meaning, Not Keywords</span>
-      </h1>
-
-      <p class="hero-sub">
-        Fine-tuned SigLIP 2 dense embeddings fused with SPLADE sparse retrieval
-        via Reciprocal Rank Fusion over 56,427 Amazon product listings.
-      </p>
-
-      <div class="hero-stats">
-        <div class="stat">
-          <span class="stat-value">56,427</span>
-          <span class="stat-label">Products</span>
+      <figure class="field-card" aria-label="Illustration of nearest-neighbour search">
+        <div class="field-head">
+          <span class="mono">embedding space</span>
+          <span class="mono field-k" id="field-k">56,427 products</span>
         </div>
-        <div class="stat">
-          <span class="stat-value">768</span>
-          <span class="stat-label">Dimensions</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">RRF</span>
-          <span class="stat-label">Fusion</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">SigLIP 2</span>
-          <span class="stat-label">Model</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- ----------------------------------------------------------------
-         Search Bar
-         ---------------------------------------------------------------- -->
-    <section class="search-section" aria-label="Search">
-      <div class="search-container" role="search">
-        <!-- Search icon -->
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-
-        <input
-          id="search-input"
-          type="search"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-          placeholder="Try: black leather boots, wooden dining table, Adidas running shoes…"
-          aria-label="Search products"
-        />
-
-        <button id="search-btn" class="search-btn" type="button" aria-label="Run search">
-          <!-- Search icon inside button -->
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <span class="btn-text">Search</span>
-        </button>
-      </div>
+        <canvas id="field" aria-hidden="true"></canvas>
+        <figcaption id="field-caption" class="field-caption">
+          Each dot is a product. A query lands among the products closest to its meaning.
+        </figcaption>
+      </figure>
     </section>
 
-    <!-- ----------------------------------------------------------------
-         Trending Searches (Redis-powered real-time leaderboard)
-         ---------------------------------------------------------------- -->
-    <section id="trending-section" class="trending-section" aria-label="Trending searches" style="display:none;">
-      <div class="trending-header">
-        <span class="trending-fire">🔥</span>
-        <span class="trending-label">Trending Searches</span>
-        <span class="trending-badge">Live</span>
-      </div>
-      <div id="trending-pills" class="trending-pills" role="list">
-        <!-- Populated by app.js via /api/trending -->
-      </div>
+    <!-- ───────────────────────────── Spec strip ───────────────────────────── -->
+    <section class="specs" aria-label="System at a glance">
+      <div class="spec"><span class="spec-value">147,702</span><span class="spec-label">raw listings cleaned with Spark</span></div>
+      <div class="spec"><span class="spec-value">56,427</span><span class="spec-label">products indexed in Qdrant</span></div>
+      <div class="spec"><span class="spec-value">768-d</span><span class="spec-label">SigLIP 2 + LoRA image vectors</span></div>
+      <div class="spec"><span class="spec-value">RRF</span><span class="spec-label">dense + sparse rank fusion</span></div>
+      <div class="spec"><span class="spec-value">Redis</span><span class="spec-label">cached repeats in milliseconds</span></div>
     </section>
 
-    <!-- ----------------------------------------------------------------
-         Status Bar
-         ---------------------------------------------------------------- -->
-    <div id="status-bar" class="status-bar" aria-live="polite" aria-atomic="true">
-      <span id="status-text" class="status-text"></span>
-      <span id="cache-badge" class="cache-badge" style="display:none;">⚡ Cached</span>
-      <span id="latency-badge" class="latency-badge"></span>
+    <!-- ───────────────────────────── Results ───────────────────────────── -->
+    <section class="results" aria-label="Search results">
+      <div id="trace" class="trace" aria-live="polite" hidden></div>
+      <div id="results-grid" class="grid"></div>
+    </section>
+
+    <!-- ───────────────────────────── How it works ───────────────────────────── -->
+    <section id="how" class="how" aria-labelledby="how-title">
+      <div class="section-head">
+        <p class="eyebrow eyebrow-plain">Under the hood</p>
+        <h2 id="how-title">How a search runs</h2>
+      </div>
+
+      <ol class="steps">
+        <li class="step">
+          <span class="step-no">01</span>
+          <h3>Check the cache</h3>
+          <p>Redis returns repeated searches straight from memory, and counts the query for the trending bar.</p>
+          <span class="tech tech-redis">Redis</span>
+        </li>
+        <li class="step">
+          <span class="step-no">02</span>
+          <h3>Encode the query</h3>
+          <p>The SigLIP 2 text tower turns it into a 768-d vector; SPLADE builds a weighted keyword vector.</p>
+          <span class="tech tech-ml">SigLIP 2 · SPLADE</span>
+        </li>
+        <li class="step">
+          <span class="step-no">03</span>
+          <h3>Retrieve both ways</h3>
+          <p>Qdrant searches product-image vectors and keyword vectors, keeping only matches above a score threshold.</p>
+          <span class="tech tech-qdrant">Qdrant</span>
+        </li>
+        <li class="step">
+          <span class="step-no">04</span>
+          <h3>Fuse the rankings</h3>
+          <p>Reciprocal Rank Fusion merges the two lists, so meaning and exact words both count.</p>
+          <span class="tech tech-qdrant">RRF</span>
+        </li>
+      </ol>
+
+      <div class="behind">
+        <h3>Behind the index</h3>
+        <div class="behind-grid">
+          <div class="behind-item">
+            <span class="tech tech-spark">Apache Spark</span>
+            <p>Cleans 147,702 nested, multilingual listings into 56,427 products: filters, image join, marketplace dedup.</p>
+          </div>
+          <div class="behind-item">
+            <span class="tech tech-ml">LoRA fine-tuning</span>
+            <p>SigLIP 2 trained on product photos and attribute captions, so “walnut desk” finds the right wood.</p>
+          </div>
+          <div class="behind-item">
+            <span class="tech tech-kafka">Apache Kafka</span>
+            <p>New products stream into the live index in seconds; every search feeds Spark Structured Streaming analytics.</p>
+          </div>
+        </div>
+        <a class="arch-link" href="https://github.com/karthik-0306/ContextClosest#how-it-works" target="_blank" rel="noopener">
+          See the full architecture
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+    <p>
+      Built by <a href="https://github.com/karthik-0306" target="_blank" rel="noopener">Karthik</a>
+      · Data: <a href="https://amazon-berkeley-objects.s3.amazonaws.com/index.html" target="_blank" rel="noopener">Amazon Berkeley Objects</a>
+    </p>
+    <p class="footer-stack mono">SigLIP 2 · SPLADE · Qdrant · Spark · Kafka · Redis · FastAPI · Modal</p>
     </div>
-
-    <!-- ----------------------------------------------------------------
-         Results Grid
-         ---------------------------------------------------------------- -->
-    <main id="results-grid" role="main" aria-label="Search results">
-      <!-- Populated by app.js -->
-    </main>
-
-    <!-- ----------------------------------------------------------------
-         Footer
-         ---------------------------------------------------------------- -->
-    <footer class="app-footer">
-      <p>
-        Built with fine-tuned
-        <a href="https://huggingface.co/google/siglip2-base-patch16-224" target="_blank" rel="noopener">SigLIP 2</a>
-        ·
-        <a href="https://huggingface.co/prithivida/Splade_PP_en_v1" target="_blank" rel="noopener">SPLADE</a>
-        ·
-        <a href="https://qdrant.tech" target="_blank" rel="noopener">Qdrant</a>
-        on the
-        <a href="https://amazon-berkeley-objects.s3.amazonaws.com/index.html" target="_blank" rel="noopener">Amazon Berkeley Objects</a>
-        dataset &middot; Powered by
-        <a href="https://kafka.apache.org" target="_blank" rel="noopener">Apache Kafka</a>
-        ·
-        <a href="https://spark.apache.org" target="_blank" rel="noopener">Apache Spark</a>
-        ·
-        <a href="https://redis.io" target="_blank" rel="noopener">Redis</a>
-      </p>
-    </footer>
-
-  </div><!-- /.app-wrapper -->
+  </footer>
 
   <script src="/static/app.js"></script>
 </body>

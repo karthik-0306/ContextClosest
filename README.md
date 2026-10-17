@@ -1,5 +1,11 @@
 # ContextClosest — Hybrid Multimodal Product Search
 
+**[Try it live →](https://karthik-0306--contextclosest-search-web.modal.run)** &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [API](#api)
+
+> The demo runs serverless and sleeps when idle, so the first search can take 20–40 s while it wakes up.
+
+[![ContextClosest search interface](docs/images/ui.png)](https://karthik-0306--contextclosest-search-web.modal.run)
+
 ContextClosest searches a catalog of **56,427 Amazon products** in plain language
 ("sunglasses for men", "white sneakers for girls"). It combines a fine-tuned
 **SigLIP 2** vision-language model, which matches your words to product *images*,
@@ -42,6 +48,7 @@ serverless on **Modal**.
 - **Redis serving layer** — result and query-embedding caches (invalidated automatically when products are added) and a "trending searches" bar over the last hour.
 - **Live analytics** — search volume, zero-result rate, cache-hit rate and p95 latency per minute, from Kafka telemetry.
 - **Serverless deployment** — Modal scales to zero when idle; images load from a public S3 bucket.
+- **Developer-friendly UI** — a query trace shows whether Redis or the full model path served each search, an embedding-space view shows the query landing among its nearest neighbours, light/dark themes, and shareable links (`/?q=wooden+coffee+table`).
 - Every big data component is optional: without Redis or Kafka the search engine still runs.
 
 ---
@@ -320,7 +327,8 @@ the cloud):
 
 | Endpoint | Description |
 |---|---|
-| `GET /` | Web UI |
+| `GET /` | Web UI (`/?q=<text>` opens a search directly) |
+| `GET /docs` | Interactive API documentation (FastAPI) |
 | `GET /api/search?q=<text>&top_k=12` | Hybrid search. `top_k` 1–50. Returns `results`, `count`, `elapsed_ms`, `cache_hit`, `no_results`; each result has `title`, `brand`, `color`, `material`, `category`, `image_url`, `score`, `is_new` |
 | `GET /api/trending?n=5` | Most searched queries in the last hour (only searches that returned products) |
 | `GET /api/health` | Status, plus `redis_available` and `kafka_producer` |

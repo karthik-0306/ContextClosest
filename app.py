@@ -150,8 +150,8 @@ async def lifespan(app: FastAPI):
 # FastAPI app
 # ---------------------------------------------------------------------------
 app = FastAPI(
-    title="Hybrid Multimodal Search Engine",
-    description="Text-based hybrid search over 56,000+ Amazon product listings.",
+    title="ContextClosest API",
+    description="Hybrid multimodal search (SigLIP 2 + SPLADE, RRF in Qdrant) over 56,427 Amazon products, with Redis caching and trending searches.",
     version="1.0.0",
     lifespan=lifespan,
 )
